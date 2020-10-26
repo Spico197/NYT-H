@@ -1,0 +1,96 @@
+python -u run.py \
+    --description="NYT-H training with pcnn on sentence-level" \
+    --task_name="sent" \
+    --model_name="sent_pcnn" \
+    --data_dir="data/train" \
+    --eval_model="best" \
+    --overwrite_output_dir \
+    --output_dir="outputs/sent_pcnn_422" \
+    --embedding_path="/home/tzhu/embeddings/glove.6B.50d.txt" \
+    --embedding_dim=50 \
+    --seed=422 \
+    --main_device="cuda:3" \
+    --device_ids="[3]" \
+    --epoch=50 \
+    --batch_size=64 \
+    --dropout_rate=0.5 \
+    --lr=1e-3 \
+    --max_len=150 \
+    --pos_dis=75 \
+    --pos_dim=5 \
+    --save_best_model \
+    --do_eval \
+    --do_train \
+    --select_score='non_na_macro_f1' \
+    --tb_logging_step=1000
+
+python -u run.py \
+    --description="NYT-H training with crcnn on sentence-level" \
+    --task_name="sent" \
+    --model_name="sent_crcnn" \
+    --data_dir="data/train" \
+    --eval_model="best" \
+    --overwrite_output_dir \
+    --output_dir="outputs/sent_crcnn_422-no_criterion_saved" \
+    --embedding_path="/home/tzhu/embeddings/glove.6B.50d.txt" \
+    --embedding_dim=50 \
+    --seed=422 \
+    --main_device="cuda:3" \
+    --device_ids="[3]" \
+    --epoch=50 \
+    --batch_size=64 \
+    --dropout_rate=0.5 \
+    --lr=1e-3 \
+    --max_len=150 \
+    --pos_dis=75 \
+    --pos_dim=5 \
+    --save_best_model \
+    --do_eval \
+    --do_train \
+    --select_score='non_na_macro_f1' \
+    --tb_logging_step=1000
+
+python -u run.py \
+    --description="NYT-H training with pcnn+att on bag-level" \
+    --task_name="bag" \
+    --model_name="bag_pcnn_att" \
+    --data_dir="data/train" \
+    --eval_model="best" \
+    --overwrite_output_dir \
+    --output_dir="outputs/bag_pcnn_att_422" \
+    --embedding_path="/home/tzhu/embeddings/glove.6B.50d.txt" \
+    --embedding_dim=50 \
+    --seed=422 \
+    --main_device="cuda:3" \
+    --device_ids="[3]" \
+    --epoch=50 \
+    --batch_size=64 \
+    --dropout_rate=0.5 \
+    --lr=1e-3 \
+    --max_len=150 \
+    --pos_dis=75 \
+    --pos_dim=5 \
+    --save_best_model \
+    --do_eval \
+    --do_train \
+    --select_score='non_na_macro_f1' \
+    --tb_logging_step=1000
+
+python -u run.py \
+    --description="NYT-H training with pcnn on bag2sent-level" \
+    --task_name="bag2sent" \
+    --model_name="bag_pcnn_att" \
+    --data_dir="data/train" \
+    --eval_model="best" \
+    --overwrite_output_dir \
+    --output_dir="outputs/bag_pcnn_att_422" \
+    --embedding_path="/home/tzhu/embeddings/glove.6B.50d.txt" \
+    --embedding_dim=50 \
+    --seed=422 \
+    --main_device="cuda:3" \
+    --device_ids="[3]" \
+    --batch_size=64 \
+    --max_len=150 \
+    --pos_dis=75 \
+    --pos_dim=5 \
+    --do_eval

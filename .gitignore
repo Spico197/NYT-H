@@ -127,3 +127,16 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# self-designed rules
+.vscode/
+*.json
+cached*
+*.tgz
+*.bin
+*.pth
+*.pkl
+
+data/
+nyt-h.tar.bz2
+nohup.out
