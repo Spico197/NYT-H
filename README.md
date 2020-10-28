@@ -1,6 +1,6 @@
 # NYT-H
 
-Source codes for the COLING2020 paper: 
+Datasets and codes for our COLING2020 paper: 
 
 Towards Accurate and Consistent Evaluation: A Dataset for Distantly-Supervised Relation Extraction
 
