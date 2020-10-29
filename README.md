@@ -16,10 +16,10 @@ Towards Accurate and Consistent Evaluation: A Dataset for Distantly-Supervised R
 ### Download
 
 Download Links:
-- Google Drive: [download](https://drive.google.com/file/d/1R7xGcbn8QKE_a1esBsam0zRCrZTFLIS9/view?usp=sharing)
-- Baidu Netdisk: [download](https://pan.baidu.com/s/1413fhz_77zQjUMKFRtF_yw) Code: `nyth`
+- Google Drive: [download](https://drive.google.com/file/d/1my4W7O-ioCYWRiP6VCbgGfXTzgdrDep0/view?usp=sharing)
+- Baidu Netdisk: [download](https://pan.baidu.com/s/1X6bkyBgM9jKb2vAJ3JspGA) Code: `nyth`
 
-Download the data from one of the links above, and paste the `nyt-h.tar.bz2` file in the mail folder. Then extract data files from the tarball file.
+Download the data from one of the links above, and paste the `nyt-h.tar.bz2` file in the main folder. Then extract data files from the tarball file.
 
 ```bash
 $ tar jxvf nyt-h.tar.bz2
@@ -29,26 +29,52 @@ You will see a `data` folder has been extracted with a structure as below.
 
 To reproduce the results in the paper, you can download the GloVe embedding from [here](http://nlp.stanford.edu/data/glove.6B.zip), and unzip it anywhere you want, and specify the filepath when running the program. `glove.6B.50d.txt` file is used as the default choice in this paper.
 
-### File Structure
-```
-.
-└── data
-    ├── bag_label2id.json : bag annotation label to numeric identifiler
-    ├── rel2id.json : relation label to numeric identifiler
-    ├── release : all the NYT-H data includes NA set, train set and test set
-    │   ├── na.json
-    │   ├── test.json
-    │   └── train.json
-    └── train : dataset for reproducing the results in the paper. dev set is split from `release/train.json`, and half of the train set are NA instances. `bag_id` and `instance_id` are re-ordered
-        ├── bag_label2id.json
-        ├── dev.json
-        ├── rel2id.json
-        ├── test.json
-        └── train.json
+### Data Example
+```python
+{
+    "instance_id": "NONNADEV#193662",
+    "bag_id": "NONNADEV#91512",
+    "relation": "/people/person/place_lived",
+    "bag_label": "unk", # `unk` means the bag is not annotated, otherwise `yes` or `no`.
+    "sentence": "Instead , he 's the kind of writer who can stare at the wall of his house in New Rochelle -LRB- as he did with '' Ragtime '' -RRB- , think about the year the house was built (1906) , follow his thoughts to the local tracks that once brought trolleys from New Rochelle to New York City and wind up with a book featuring Theodore Roosevelt , Scott Joplin , Emma Goldman , Stanford White and Harry Houdini . ''",
+    "head": {
+        "guid": "/guid/9202a8c04000641f8000000000176dc3",
+        "word": "Stanford White",
+        "type": "/influence/influence_node,/people/deceased_person" # type for entities, split by comma if one entity has many types
+    },
+    "tail": {
+        "guid": "/guid/9202a8c04000641f80000000002f8906",
+        "word": "New York City",
+        "type": "/architecture/architectural_structure_owner,/location/citytown"
+    }
+}
 ```
 
-## Train
-We set 5 random seeds and take the average scores as the final results. Please be aware that although we have set the random seed, the results may variants in different architectures.
+### File Structure and Data Preparation
+```
+data
+├── bag_label2id.json : bag annotation labels to numeric identifiers. `unk` label means the bag is not annotated, otherwise `yes` or `no`
+├── rel2id.json : relation labels to numeric identifiers
+├── na_train.json : NA instances for training to reproduce results in our paper
+├── na_rest.json : rest of the NA instances
+├── train_nonna.json : Non-NA instances for training (NO ANNOTATIONS)
+├── dev.json : Non-NA instances for model selection during training (NO ANNOTATIONS)
+└── test.json : Non-NA instances for final evaluation, including `bag_label` annotations
+```
+
+To get the full NA set:
+```bash
+$ cd data && cat na_rest.json na_train.json > na.json
+```
+
+To reproduce the results in our paper, combine the sampled NA instances(`na_train.json`) and `train_nonna.json` to get the train set:
+```bash
+$ cd data && cat train_nonna.json na_train.json > train.json
+```
+
+## Train & Evaluation for Reproducing the Results
+We set 5 random seeds and take the average scores as the final results.
+Please be aware that although we have set the random seed, the results may variants in different hardware architectures.
 
 ### Sent2Sent
 ```bash
@@ -134,6 +160,39 @@ python -u run.py \
 ```
 
 ## DSGT and MAGT Evaluation
+If you train the model by using our codes and set `--do_eval` flag, then you can find all the evaluation results in the `log.log` file in the output directory.
+
+If you want to check the DSGT and MAGT P/R/F1 scores directly, you should generate the result file with specific formats and type the command below.
+
+```bash
+python -u evaluate.py --track bag2sent \ # or bag2bag, sent2sent
+                      --rel2id /path/to/your/rel2id/file \
+                      --test /path/to/the/test.json/file \
+                      --pred /path/to/your/prediction/result/file
+```
+
+Please check the `evaluate.py` file for more information on other metrics (AUC/Precision@K).
+
+### Formats of Result Files
+`pred` means the predicted relation of the bag/instance.
+
+#### Sent2Sent or Bag2Sent
+```python
+{"instance_id": "TEST#123", "pred": "/business/company/founders"}
+{"instance_id": "TEST#124", "pred": "/business/person/company"}
+{"instance_id": "TEST#125", "pred": "/people/person/place_lived"}
+...
+```
+
+#### Bag2Bag
+```python
+{"bag_id": "TEST#123", "pred": "/business/company/founders"}
+{"bag_id": "TEST#124", "pred": "/business/person/company"}
+{"bag_id": "TEST#125", "pred": "/people/person/place_lived"}
+...
+```
+
+## Metrics
 ### AUC
 Because of different AUC calculation strategies, you can see there are two kinds of AUC values if you check the log files.
 
@@ -169,7 +228,7 @@ Figure 4a in the paper is ploted via interpolation, while Figure 4b is ploted by
 You can refer to `plot_prc.py` file for more details.
 
 ## Cite
-```
+```bibtex
 @inproceedings{zhu-2020-nyth,
     title = "Towards Accurate and Consistent Evaluation: A Dataset for Distantly-Supervised Relation Extraction",
     author = "Zhu, Tong and

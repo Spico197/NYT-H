@@ -17,6 +17,7 @@ import numpy as np
 
 logger = logging.getLogger('new_lib_logger')
 
+
 def set_seed(seed=0):
     os.environ['PYTHONHASHSEED'] = str(seed)
     random.seed(seed)
@@ -25,6 +26,15 @@ def set_seed(seed=0):
     torch.cuda.manual_seed(seed)
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
+
+
+def load_line_json(filepath):
+    data = []
+    with open(filepath, "rt", encoding="utf-8") as fin:
+        for line in fin:
+            ins = json.loads(line.strip())
+            data.append(ins)
+        return data
 
 
 class WordEmbeddingLoader(object):
@@ -79,8 +89,7 @@ class WordEmbeddingLoader(object):
 
 class NythDataset(Dataset):
     def __init__(self, path, config, word2id, rel2id, bag_label2id):
-        with open(path, 'rt', encoding='utf-8') as fin:
-            self.data = json.load(fin)
+        self.data = load_line_json(path)
             
         self.word2id = word2id
         self.rel2id = rel2id
@@ -185,25 +194,22 @@ class SentDataProcessor(object):
                 vocab = pickle.load(fin)
         else:
             train_vocab = set()
-            with open(os.path.join(config.data_dir, 'train.json'), 'r') as fin:
-                train = json.load(fin)
-                for ins in train:
-                    for word in ins['sentence'].lower().split():
-                        train_vocab.add(word)
+            train = load_line_json(os.path.join(config.data_dir, 'train.json'))
+            for ins in train:
+                for word in ins['sentence'].lower().split():
+                    train_vocab.add(word)
 
             dev_vocab = set()
-            with open(os.path.join(config.data_dir, 'dev.json'), 'r') as fin:
-                dev = json.load(fin)
-                for ins in dev:
-                    for word in ins['sentence'].lower().split():
-                        dev_vocab.add(word)
+            dev = load_line_json(os.path.join(config.data_dir, 'dev.json'))
+            for ins in dev:
+                for word in ins['sentence'].lower().split():
+                    dev_vocab.add(word)
 
             test_vocab = set()
-            with open(os.path.join(config.data_dir, 'test.json'), 'r') as fin:
-                test = json.load(fin)
-                for ins in test:
-                    for word in ins['sentence'].lower().split():
-                        test_vocab.add(word)
+            test = load_line_json(os.path.join(config.data_dir, 'test.json'))
+            for ins in test:
+                for word in ins['sentence'].lower().split():
+                    test_vocab.add(word)
 
             vocab = train_vocab | test_vocab | dev_vocab
             with open(os.path.join(self.config.data_dir, 'vocab.pkl'), 'wb') as fin:
@@ -277,9 +283,8 @@ class SentDataProcessor(object):
 
 class NythBagDataset(Dataset):
     def __init__(self, path, config, word2id, rel2id, bag_label2id):
-        with open(path, 'rt', encoding='utf-8') as fin:
-            self.data = json.load(fin)
-            
+        self.data = load_line_json(path)
+
         self.word2id = word2id
         self.rel2id = rel2id
         self.config = config
@@ -423,25 +428,22 @@ class BagDataProcessor(object):
                 vocab = pickle.load(fin)
         else:
             train_vocab = set()
-            with open(os.path.join(config.data_dir, 'train.json'), 'r') as fin:
-                train = json.load(fin)
-                for ins in train:
-                    for word in ins['sentence'].lower().split():
-                        train_vocab.add(word)
+            train = load_line_json(os.path.join(config.data_dir, 'train.json'))
+            for ins in train:
+                for word in ins['sentence'].lower().split():
+                    train_vocab.add(word)
 
             dev_vocab = set()
-            with open(os.path.join(config.data_dir, 'dev.json'), 'r') as fin:
-                dev = json.load(fin)
-                for ins in dev:
-                    for word in ins['sentence'].lower().split():
-                        dev_vocab.add(word)
+            dev = load_line_json(os.path.join(config.data_dir, 'dev.json'))
+            for ins in dev:
+                for word in ins['sentence'].lower().split():
+                    dev_vocab.add(word)
 
             test_vocab = set()
-            with open(os.path.join(config.data_dir, 'test.json'), 'r') as fin:
-                test = json.load(fin)
-                for ins in test:
-                    for word in ins['sentence'].lower().split():
-                        test_vocab.add(word)
+            test = load_line_json(os.path.join(config.data_dir, 'test.json'))
+            for ins in test:
+                for word in ins['sentence'].lower().split():
+                    test_vocab.add(word)
 
             vocab = train_vocab | test_vocab | dev_vocab
             with open(os.path.join(self.config.data_dir, 'vocab_bag.pkl'), 'wb') as fin:
@@ -555,8 +557,7 @@ class BagDataProcessor(object):
 
 class NythBag2SentDataset(Dataset):
     def __init__(self, path, config, word2id, rel2id, bag_label2id):
-        with open(path, 'rt', encoding='utf-8') as fin:
-            self.data = json.load(fin)
+        self.data = load_line_json(path)
             
         self.word2id = word2id
         self.rel2id = rel2id
@@ -665,25 +666,22 @@ class Bag2SentDataProcessor(object):
                 vocab = pickle.load(fin)
         else:
             train_vocab = set()
-            with open(os.path.join(config.data_dir, 'train.json'), 'r') as fin:
-                train = json.load(fin)
-                for ins in train:
-                    for word in ins['sentence'].lower().split():
-                        train_vocab.add(word)
+            train = load_line_json(os.path.join(config.data_dir, 'train.json'))
+            for ins in train:
+                for word in ins['sentence'].lower().split():
+                    train_vocab.add(word)
 
             dev_vocab = set()
-            with open(os.path.join(config.data_dir, 'dev.json'), 'r') as fin:
-                dev = json.load(fin)
-                for ins in dev:
-                    for word in ins['sentence'].lower().split():
-                        dev_vocab.add(word)
+            dev = load_line_json(os.path.join(config.data_dir, 'dev.json'))
+            for ins in dev:
+                for word in ins['sentence'].lower().split():
+                    dev_vocab.add(word)
 
             test_vocab = set()
-            with open(os.path.join(config.data_dir, 'test.json'), 'r') as fin:
-                test = json.load(fin)
-                for ins in test:
-                    for word in ins['sentence'].lower().split():
-                        test_vocab.add(word)
+            test = load_line_json(os.path.join(config.data_dir, 'test.json'))
+            for ins in test:
+                for word in ins['sentence'].lower().split():
+                    test_vocab.add(word)
 
             vocab = train_vocab | test_vocab | dev_vocab
             with open(os.path.join(self.config.data_dir, 'vocab_bag2sent.pkl'), 'wb') as fin:

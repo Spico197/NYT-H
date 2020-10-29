@@ -5,6 +5,7 @@
 import os
 import pdb
 import json
+import argparse
 import warnings
 from collections import OrderedDict
 from functools import total_ordering
@@ -16,6 +17,9 @@ import numpy as np
 from sklearn import metrics
 from sklearn.exceptions import UndefinedMetricWarning
 from tqdm import tqdm
+
+from helper import load_line_json
+
 
 warnings.filterwarnings(action="ignore", category=UndefinedMetricWarning)
 
@@ -149,7 +153,7 @@ def evaluate_nyth(model, criterion, logger, processor, config, dataset_name, pre
             for x in batch[0].cpu().numpy():
                 tokens.append(" ".join([processor.id2word[y] for y in x.tolist()]))
             if config.task_name == 'sent' or (config.task_name == 'bag' \
-                and '_one' in config.model_name):
+                    and '_one' in config.model_name):
                 softmax_out = torch.softmax(out.cpu().detach(), dim=-1)
             else:
                 softmax_out = out.cpu().detach() # reference from opennre
@@ -663,16 +667,18 @@ def compute_dsgt(labels, preds, rel2id, verbose=True):
     non_na_macro_recall = sum(rs)/len(rs)
     non_na_macro_f1 = sum(f1s)/len(f1s)
     if verbose:
-        logger.info("DS Non-NA Macro Precision: {:.3f}".format(non_na_macro_precision*100))
-        logger.info("DS Non-NA Macro Recall: {:.3f}".format(non_na_macro_recall*100))
-        logger.info("DS Non-NA Macro F1: {:.3f}".format(non_na_macro_f1*100))
+        print("DSGT Macro Precision: {:.3f}".format(non_na_macro_precision*100))
+        print("DSGT Macro Recall: {:.3f}".format(non_na_macro_recall*100))
+        print("DSGT Macro F1: {:.3f}".format(non_na_macro_f1*100))
     return non_na_macro_precision, non_na_macro_recall, non_na_macro_f1
 
 
 def compute_magt(labels, preds, track, rel2id, test, id2results, verbose=True):
     id_names = {
+        "sent2sent": "instance_id",
         "sent": "instance_id",
         "bag2sent": "instance_id",
+        "bag2bag": "bag_id",
         "bag": "bag_id",
     }
     id_name = id_names[track]
@@ -724,109 +730,53 @@ def compute_magt(labels, preds, track, rel2id, test, id2results, verbose=True):
     f1s = [x['f1_score'] for x in rel2f1s.values()]
     macro_f1 = sum(f1s) / len(f1s)
     if verbose:
-        logger.info("Macro Precision: {:.3f}".format(macro_precision*100))
-        logger.info("Macro Recall: {:.3f}".format(macro_recall*100))
-        logger.info("Macro F1: {:.3f}".format(macro_f1*100))
+        print("MAGT Macro Precision: {:.3f}".format(macro_precision*100))
+        print("MAGT Macro Recall: {:.3f}".format(macro_recall*100))
+        print("MAGT Macro F1: {:.3f}".format(macro_f1*100))
     return macro_precision, macro_recall, macro_f1
 
 
 if __name__ == "__main__":
-    """setup logging module"""
-    import logging
-    import sys
-    logger = logging.getLogger('new_lib_logger')
-    logger.setLevel(logging.INFO)
-    # combination_type = sys.argv[1]
-    # log_path = f"combinations{combination_type}.txt"
-    log_path = "log.log"
-    fh = logging.FileHandler(log_path)
-    fh.setLevel(logging.INFO)
-    fmt = "[%(asctime)-15s]-%(levelname)s-%(filename)s-%(lineno)d-%(process)d: %(message)s"
-    datefmt = "%a %d %b %Y %H:%M:%S"
-    formatter = logging.Formatter(fmt, datefmt)
-    fh.setFormatter(formatter)
-    logger.addHandler(fh)
-    stream_handler = logging.StreamHandler(sys.stdout)
-    stream_handler.setFormatter(formatter)
-    logger.addHandler(stream_handler)
+    arg_parser = argparse.ArgumentParser(description="Evaluation on NYT-H")
+    arg_parser.add_argument("-k", "--track", type=str, required=True,
+                            choices=["sent2sent", "bag2sent", "bag2bag"],
+                            help="Evaluation Track")
+    arg_parser.add_argument("-r", "--rel2id", type=str, required=True,
+                            help="filepath to rel2id.json file")
+    arg_parser.add_argument("-t", "--test", type=str, required=True,
+                            help="filepath to test.json file")
+    arg_parser.add_argument("-p", "--pred", type=str, required=True,
+                            help="filepath to prediction results")
+    args = arg_parser.parse_args()
 
-    with open('datav5/rel2id.json', 'r', encoding='utf-8') as fin:
+    with open(args.rel2id, 'r', encoding='utf-8') as fin:
         rel2id = json.load(fin)
+    test = load_line_json(args.test)
+    pred_results = load_line_json(args.pred)
+    track = args.track
 
-    with open('datav5/fix_test_bag_v5.json', 'r', encoding='utf-8') as fin:
-        test = json.load(fin)
-    
-    # eval_dir_base = '/data4/tzhu/sent_cnn/output_dir_rs_{}/bag_bigru_att/eval/'
-    eval_dir_base = '/data4/tzhu/nyth_codes/data_debug/bag_pcnn_att_{}/eval/'
-    # eval_dir = '/data4/tzhu/bert_re_torch/nyth_bert_marker_auc/eval/'
-    eval_level = 'bag2sent'
-    seeds = [422, 4227, 42270, 422701, 4227019]
-    dsgts_p = list(); dsgts_r = list(); dsgts_f1 = list()
-    magts_p = list(); magts_r = list(); magts_f1 = list()
+    track_id_name = {
+        "bag2bag": "bag_id",
+        "bag2sent": "instance_id",
+        "sent2sent": "instance_id"
+    }[track]
 
+    id2test = {}
+    for ins in test:
+        id2test[ins[track_id_name]] = ins
 
-    for seed in seeds:
-        eval_dir = eval_dir_base.format(seed)
-        logger.info(f"{eval_level} - {eval_dir.split('/')[-3]}")
-        if eval_level == 'sent':
-            id2results = dict()
-            labels = list()
-            preds = list()
-            with open(os.path.join(eval_dir, 'eval_mc.txt'), 'r', encoding='utf-8') as fin:
-                for line in fin:
-                    ins = json.loads(line)
-                    id2results[ins['instance_id']] = ins
-                    labels.append(rel2id[ins['label']])
-                    preds.append(rel2id[ins['pred']])
-            
-            # original non-NA f1 after distant supervision training
-            print(' -------------------- DS Eval --------------------')
-            ds_p, ds_r, ds_f1 = compute_dsgt(labels, preds, rel2id, verbose=True)
-            print(' -------------------- MC Eval --------------------')
-            ma_p, ma_r, ma_f1 = compute_magt(labels, preds, "sent", rel2id, test, id2results, verbose=True)
-        elif eval_level == 'bag':
-            id2results = dict()
-            labels = list()
-            preds = list()
-            with open(os.path.join(eval_dir, 'eval_mc.txt'), 'r', encoding='utf-8') as fin:
-                for line in fin:
-                    ins = json.loads(line)
-                    id2results[ins['bag_id']] = ins
-                    labels.append(rel2id[ins['label']])
-                    preds.append(rel2id[ins['pred']])
-            print(' -------------------- DS Eval --------------------')
-            ds_p, ds_r, ds_f1 = compute_dsgt(labels, preds, rel2id, verbose=True)
-            print(' -------------------- MC Eval --------------------')
-            ma_p, ma_r, ma_f1 = compute_magt(labels, preds, "bag", rel2id, test, id2results, verbose=True)
-        elif eval_level == 'bag2sent':
-            id2results = dict()
-            labels = list()
-            preds = list()
-            with open(os.path.join(eval_dir, 'eval_mc_bag2sent.txt'), 'r', encoding='utf-8') as fin:
-                for line in fin:
-                    ins = json.loads(line)
-                    id2results[ins['instance_id']] = ins
-                    labels.append(rel2id[ins['label']])
-                    preds.append(rel2id[ins['pred']])
-            print(' -------------------- DS Eval --------------------')
-            ds_p, ds_r, ds_f1 = compute_dsgt(labels, preds, rel2id, verbose=True)
-            print(' -------------------- MC Eval --------------------')
-            ma_p, ma_r, ma_f1 = compute_magt(labels, preds, "bag2sent", rel2id, test, id2results, verbose=True)
-        else:
-            raise ValueError
+    id2results = dict()
+    labels = list()
+    preds = list()
+    for ins in pred_results:
+        rel2result = {}
+        for rel in rel2id:
+            rel2result[rel] = False
+        rel2result[ins['pred']] = True
+        id2results[ins[track_id_name]] = {track_id_name: ins[track_id_name], "rel2result": rel2result}
+        labels.append(rel2id[id2test[ins[track_id_name]]["relation"]])
+        preds.append(rel2id[ins['pred']])
 
-        dsgts_p.append(ds_p)
-        dsgts_r.append(ds_r)
-        dsgts_f1.append(ds_f1)
-        magts_p.append(ma_p)
-        magts_r.append(ma_r)
-        magts_f1.append(ma_f1)
-
-    print(' -------------------- AVERAGE --------------------')
-    logger.info("MEAN DSGT Macro Precision: {:.3f}".format(sum(dsgts_p)/len(dsgts_p)*100))
-    logger.info("MEAN DSGT Macro Recall: {:.3f}".format(sum(dsgts_r)/len(dsgts_r)*100))
-    logger.info("MEAN DSGT Macro F1: {:.3f}".format(sum(dsgts_f1)/len(dsgts_f1)*100))
-
-    logger.info("MEAN MAGT Macro Precision: {:.3f}".format(sum(magts_p)/len(magts_p)*100))
-    logger.info("MEAN MAGT Macro Recall: {:.3f}".format(sum(magts_r)/len(magts_r)*100))
-    logger.info("MEAN MAGT Macro F1: {:.3f}".format(sum(magts_f1)/len(magts_f1)*100))
+    print(f"----------- {track} Track Evaluation -----------")
+    ds_p, ds_r, ds_f1 = compute_dsgt(labels, preds, rel2id, verbose=True)
+    ma_p, ma_r, ma_f1 = compute_magt(labels, preds, track, rel2id, test, id2results, verbose=True)
