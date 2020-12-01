@@ -2,7 +2,8 @@
 
 Datasets and codes for our COLING2020 paper: 
 
-Towards Accurate and Consistent Evaluation: A Dataset for Distantly-Supervised Relation Extraction
+Towards Accurate and Consistent Evaluation: A Dataset for Distantly-Supervised Relation Extraction [[pdf]](https://www.aclweb.org/anthology/2020.coling-main.566.pdf)
+
 
 ## Dependencies
 - python == 3.7.7
@@ -229,18 +230,22 @@ You can refer to `plot_prc.py` file for more details.
 
 ## Cite
 ```bibtex
-@inproceedings{zhu-2020-nyth,
+@inproceedings{zhu-etal-2020-nyth,
     title = "Towards Accurate and Consistent Evaluation: A Dataset for Distantly-Supervised Relation Extraction",
-    author = "Zhu, Tong and
-        Wang, Haitao and
-        Yu, Junjie and
-        Zhou, Xiabing and
-        Chen, Wenliang and
-        Zhang, Wei and
-        Zhang, Min",
+    author = "Zhu, Tong  and
+      Wang, Haitao  and
+      Yu, Junjie  and
+      Zhou, Xiabing  and
+      Chen, Wenliang  and
+      Zhang, Wei  and
+      Zhang, Min",
     booktitle = "Proceedings of the 28th International Conference on Computational Linguistics",
+    month = dec,
     year = "2020",
-    publisher = "Association for Computational Linguistics",
+    address = "Barcelona, Spain (Online)",
+    publisher = "International Committee on Computational Linguistics",
+    url = "https://www.aclweb.org/anthology/2020.coling-main.566",
+    pages = "6436--6447",
 }
 ```
 
