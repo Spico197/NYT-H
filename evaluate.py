@@ -704,7 +704,13 @@ def compute_magt(labels, preds, track, rel2id, test, id2results, verbose=True):
         if rel != 'NA':
             stat_results[rel] = dict(preds=list(), labels=list())
 
+    bag_ids = set()
     for ins in test:
+        if track in {"bag", "bag2bag"}:
+            if ins["bag_id"] not in bag_ids:
+                bag_ids.add(ins["bag_id"])
+            else:
+                continue
         if ins['bag_label'] == 'yes':
             stat_results[ins['relation']]['labels'].append(1)
         else:
